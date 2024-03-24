@@ -63,7 +63,7 @@ func loggingMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-func initializeTransactionLog() error {
+func initializeFileTransactionLog() error {
 	var err error
 
 	transactionLogger, err = NewTransactionLogger("transaction.log")
@@ -96,7 +96,7 @@ func initializeTransactionLog() error {
 }
 
 func main() {
-	err := initializeTransactionLog()
+	err := initializeFileTransactionLog()
 	if err != nil {
 		panic(err)
 	}
