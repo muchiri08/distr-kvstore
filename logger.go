@@ -5,6 +5,8 @@ import (
 	"database/sql"
 	"fmt"
 	"os"
+
+	_ "github.com/lib/pq"
 )
 
 type TransactionLogger interface {
@@ -64,6 +66,13 @@ func (ftl *FileTransactionLogger) Run() {
 			if err != nil {
 				errors <- err
 				return
+			}
+			// map operations
+			switch e.EventType {
+			case EventDelete:
+				Delete(e.Key)
+			case EventPut:
+				Put(e.Key, e.Value)
 			}
 		}
 	}()
@@ -147,10 +156,7 @@ func NewPostgresTransactionLogger(config PostgresDBParams) (TransactionLogger, e
 	}
 
 	ptl := &PostgresTransactionLogger{db: db}
-	exists, err := ptl.verifyTableExists()
-	if err != nil {
-		return nil, fmt.Errorf("failed to verify table exists: %w", err)
-	}
+	exists, _ := ptl.verifyTableExists()
 	if !exists {
 		if err = ptl.createTable(); err != nil {
 			return nil, fmt.Errorf("failed to create table: %w", err)
@@ -197,6 +203,13 @@ func (ptl *PostgresTransactionLogger) Run() {
 			_, err := ptl.db.Exec(query, e.EventType, e.Key, e.Value)
 			if err != nil {
 				errors <- err
+			}
+			// map operations
+			switch e.EventType {
+			case EventDelete:
+				Delete(e.Key)
+			case EventPut:
+				Put(e.Key, e.Value)
 			}
 		}
 	}()
